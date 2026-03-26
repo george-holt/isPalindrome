@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>IsPalindrome</RootNamespace>
+    <AssemblyName>IsPalindrome</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Tests live in a sibling folder; SDK default glob would compile them into this library. -->
+    <Compile Remove="IsPalindrome.Tests/**" />
+  </ItemGroup>
+</Project>

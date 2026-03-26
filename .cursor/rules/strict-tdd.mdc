@@ -1,0 +1,26 @@
+---
+description: Strict TDD — no production feature without a failing acceptance test first
+alwaysApply: true
+---
+
+# Strict TDD (isPalindrome)
+
+Follow **red → green → refactor**. Acceptance behavior is defined by `fixtures/acceptance_manifest.json` and harnesses that execute it.
+
+## Rules
+
+1. **Red first** — Before any new production code, add or change an acceptance case (typically in `fixtures/acceptance_manifest.json`) and/or a test that loads it, so that **at least one test fails** and the failure describes the missing or wrong behavior.
+2. **Green** — Implement the **smallest** production change that makes that test pass. No extra features “while you’re there.”
+3. **Refactor** — Only with a green suite; keep behavior covered by the same tests.
+
+## Do not
+
+Add features, public APIs, helpers, or production refactors unless **some acceptance-level test would fail without that change** (or would fail on regression after a justified refactor).
+
+## Allowed without a new failing test
+
+- Tooling and project config (e.g. `.csproj`, editor settings).
+- Test project code and fixtures **that define or drive the next red**.
+- Documentation that records requirements or explains existing behavior (not a substitute for tests for new behavior).
+
+When in doubt: write or adjust the test first, confirm it fails, then implement.
