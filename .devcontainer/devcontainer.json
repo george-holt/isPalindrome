@@ -1,0 +1,23 @@
+{
+  "name": "isPalindrome (polyglot)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "containerEnv": {
+    "PYTHONPATH": "${containerWorkspaceFolder}"
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.terminal.activateEnvironment": false
+      },
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "ms-dotnettools.csharp"
+      ]
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteUser": "vscode"
+}

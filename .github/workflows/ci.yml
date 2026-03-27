@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  full-matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build build-essential
+
+      - name: Configure and build C and C++
+        run: |
+          cmake -S cpp -B cpp/build
+          cmake --build cpp/build
+          cmake -S c -B c/build
+          cmake --build c/build
+
+      - name: Toolchain check
+        run: python3 tools/check_toolchain.py
+
+      - name: Full test matrix
+        run: python3 tools/run_all_tests.py

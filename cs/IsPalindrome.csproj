@@ -9,5 +9,6 @@
   <ItemGroup>
     <!-- Tests live in a sibling folder; SDK default glob would compile them into this library. -->
     <Compile Remove="IsPalindrome.Tests/**" />
+    <Compile Remove="PalCli/**" />
   </ItemGroup>
 </Project>

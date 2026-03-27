@@ -1,0 +1,22 @@
+[package]
+name = "is_palindrome"
+version = "0.1.0"
+edition = "2021"
+description = "ASCII palindrome checker (SPEC §2–§3); library + IsPalindromeCLI."
+publish = false
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+which = "6"
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "pal_stdin"
+path = "src/bin/pal_stdin.rs"
+
+[[bin]]
+name = "is_palindrome_cli"
+path = "src/bin/is_palindrome_cli.rs"

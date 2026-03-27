@@ -1,6 +1,14 @@
 # Build outputs
 [Bb]in/
 [Oo]bj/
+cpp/build/
+cpp/out/
+rust/**/target/
+nodejs/**/node_modules/
+c/build/
+c/out/
+reports/
+
 [Dd]ebug/
 [Rr]elease/
 x64/

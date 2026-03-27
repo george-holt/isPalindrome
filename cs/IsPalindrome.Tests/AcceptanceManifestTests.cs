@@ -64,7 +64,7 @@ public sealed class AcceptanceManifestTests
         foreach (var x in arr.EnumerateArray())
         {
             var s = x.GetString();
-            if (s is "csharp" or "dotnet")
+            if (s is "csharp" or "dotnet" or "cs")
                 return true;
         }
         return false;

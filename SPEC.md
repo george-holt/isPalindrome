@@ -14,11 +14,46 @@ The repo is aimed at **learning** and **job interviews**, not production deploym
 | **File sprawl** | Prefer **fewer, clearer files** over many small files when splitting does not help understanding. Avoid extra files **only** to mirror layers or patterns from large codebases. |
 | **Decomposition** | Structure **inside** the reference file: meaningful functions, clear boundaries, and names that teach intent. Maintainability at the **function** level remains important—**not** extra type files for layering. |
 
-### Normative: single-file reference implementation
+### Normative: command-line deliverable (canonical CLI)
 
-For each language, the **reference library** (public API + helpers) lives in **exactly one source file** (e.g. C#: one `.cs` file under [`cs/`](cs/) such as `IsPalindrome.cs`). A **second** file or project is allowed **only** for tests when the test framework requires it (e.g. xUnit project referencing the library).
+The **repository** provides **exactly one** user-facing CLI, implemented as the Python package [`fixtures/cli/`](fixtures/cli/) (`python -m fixtures.cli …` from the repo root). Subcommands:
+
+| Subcommand | Role |
+|------------|------|
+| `check` | Palindrome check. Use **`--impl`** to select the backend: `py`, `cpp`, `c`, `rust`, `cs`, `nodejs` (default **`py`**). Shared flags: `--hex`, `--custom`, `--stdin`, positional text. Exit codes: **0** = true, **1** = false, **2** = error (e.g. `NON_ASCII_STRING_INPUT`). Stdout: one line `true` or `false`. |
+| `acceptance` | Runs [`fixtures/acceptance_manifest.json`](fixtures/acceptance_manifest.json) cases by invoking `check` per case (end-to-end CLI contract). |
+| `test-native` | Runs [`tools/run_all_tests.py`](tools/run_all_tests.py) (native library test matrix + HTML report under `reports/<timestamp>/`). |
+
+Non-`py` backends use **thin** adapters (stdin JSON → library) under each language directory; their only job is uniform behavior and error checking, not a second user-facing flag grammar.
+
+**Per-language ports** still ship **libraries** plus native tests that read [`fixtures/acceptance_manifest.json`](fixtures/acceptance_manifest.json); the canonical CLI is additional and dispatches to those implementations.
+
+### Normative: single-file core (reference layout)
+
+The **core palindrome logic** should live in **exactly one source file** per language when practical (e.g. C#: [`cs/IsPalindrome.cs`](cs/IsPalindrome.cs), Python sample: [`py/is_palindrome/palindrome.py`](py/is_palindrome/palindrome.py)). The **canonical** CLI lives under [`fixtures/cli/`](fixtures/cli/) (not inside `py/`). Additional files are allowed **only** for tests when the test framework requires its own project or harness.
 
 Shared [`fixtures/`](fixtures/) keep behavior aligned across languages without forcing identical file counts.
+
+### Cross-language ports: no runtime coupling
+
+Each language implementation is **self-contained**. Do **not** rely on **FFI** to another language’s library, a **shared compiled binary**, or a single “canonical” runtime that every port must link. Shared [`fixtures/`](fixtures/) JSON and matrices are **portable case data** only. The [`fixtures/cli/`](fixtures/cli/) package is a **Python dispatcher** that may **subprocess** to each port’s thin adapter; it does not replace the “no FFI between ports” rule for library code.
+
+### Tight dependency rule
+
+Reference implementations keep third-party surface **minimal**:
+
+| Area | Rule |
+|------|------|
+| **Core algorithm** (in-memory palindrome over bytes) | **Standard library only**—no ICU, Boost, or extra packages for the core check. |
+| **Local seekable file** streaming (if implemented) | **Standard library** plus normal OS / language file I/O; no extra third-party libraries solely for local file access beyond that baseline. |
+| **S3 / object streaming** (if implemented) | **Official AWS SDK** for that language (e.g. .NET **AWSSDK.S3**, **aws-sdk-cpp** S3, Python **boto3**, Node **@aws-sdk/client-s3**, Rust **aws-sdk-s3**). Use it for object metadata, ranged **GetObject**, and the SDK’s default credential chain. **Do not** ship a custom HTTPS / SigV4 client just for S3. |
+| **C** | Core: **ISO C + libc**. For S3, use an **AWS-documented** C stack (e.g. **AWS CRT** / **aws-c-s3**), not ad-hoc TLS/signing code. |
+
+### Complexity and threading
+
+- **Time:** **O(n)** over bytes examined in the worst case; **sublinear-time** palindrome detection is **out of scope** for this repo.
+- **Space:** The in-memory path uses **O(1)** extra space besides the input; streaming paths use **O(buffer size)** memory bounded independently of object size, not **O(total input size)** loaded whole.
+- **Threading:** A **single-threaded** logical loop is **sufficient** and matches the teaching goal. Overlapping or parallel I/O for left/right reads (e.g. on S3) is an optional implementation detail, not a requirement.
 
 ---
 
@@ -77,6 +112,7 @@ The spec does **not** require a dedicated “options” object in code. Behavior
 4. Skip cases where `applies_to` lists only runtimes you do not implement.
 5. **`expected.kind`:** `"boolean"` → assert result; `"error"` → assert exception / error code `expected.code`.
 6. **`pal-stream-note-001`:** metadata only — manually verify streaming (file/S3) matches in-memory for referenced cases.
+7. **CLI contract:** `python -m fixtures.cli check` / `acceptance` (§1) must satisfy exit codes and stdout/stderr shape for §2–§3.
 
 ### Requirement traceability (abbreviated)
 
@@ -99,7 +135,7 @@ The code **`EMPTY_CUSTOM_INVALID_SET`** is **deprecated** for the target product
 ## 5. Implementation process (strict TDD)
 
 1. **Red** — Add or change a row in [`acceptance_manifest.json`](fixtures/acceptance_manifest.json), or add **exactly one** new failing test that encodes the next behavior. Run the suite and **confirm failure** before writing production code.
-2. **No production code before red** — Do **not** add or change library code until the failure in step 1 is observed.
+2. **No production code before red** — Do **not** add or change production code (CLI, core logic, shared modules) until the failure in step 1 is observed.
 3. **Green** — Write the **smallest** change that makes the test(s) pass.
 4. **Refactor** — Only with a full green suite; keep behavior covered by the same tests.
 
@@ -191,9 +227,29 @@ flowchart TB
 
 **Costs (accepted):** Prefetch/cache correctness; blocking sync-over-async on a miss is a risk in some hosts unless ranges are pre-warmed or usage is constrained. Very large objects may need streaming policy **inside** the physical layer without changing the logical API.
 
+### Reference implementation (Python — sample + CLI harness)
+
+**[`py/is_palindrome/palindrome.py`](py/is_palindrome/palindrome.py)** — sample core (`from_bytes`, `from_string`). **[`fixtures/cli/`](fixtures/cli/)** — canonical CLI (`python -m fixtures.cli`). Tests: **`py/tests/`** for **`acceptance_manifest.json`**; **`fixtures/cli`** exercises **`check`** and **`acceptance`** against the manifest.
+
 ### Reference implementation (C#)
 
-The **intended** layout is **one library file** (e.g. `cs/IsPalindrome.cs`) plus a test project. Multi-file class libraries under `cs/` are **not** the target shape for this repo. Teaching sketches may use [`foo.cs`](foo.cs) at the repo root.
+**[`cs/IsPalindrome.cs`](cs/IsPalindrome.cs)** — library only, plus [`cs/IsPalindrome.Tests/`](cs/IsPalindrome.Tests/) for **`acceptance_manifest.json`**. Teaching sketches may use [`foo.cs`](foo.cs) at the repo root.
+
+### Reference implementation (C++)
+
+**[`cpp/src/IsPalindrome.cpp`](cpp/src/IsPalindrome.cpp)** and **[`cpp/include/IsPalindrome.hpp`](cpp/include/IsPalindrome.hpp)** — core library; **[`cpp/tests/acceptance_tests.cpp`](cpp/tests/acceptance_tests.cpp)** runs **`acceptance_manifest.json`**.
+
+### Reference implementation (Rust)
+
+**[`rust/is_palindrome/src/lib.rs`](rust/is_palindrome/src/lib.rs)** — core library (`from_bytes`, `from_string` with `Result`). **[`rust/is_palindrome/tests/acceptance_manifest.rs`](rust/is_palindrome/tests/acceptance_manifest.rs)** runs **`acceptance_manifest.json`** (`cargo test` from the crate directory). **`pal_stdin`** binary (`serde_json`) is the thin adapter for `fixtures.cli check --impl rust`.
+
+### Reference implementation (Node.js)
+
+**[`nodejs/is-palindrome/isPalindrome.js`](nodejs/is-palindrome/isPalindrome.js)** — core library (`fromBytes`, `fromString`; `PalindromeError`). **[`nodejs/is-palindrome/test/acceptance_manifest.test.js`](nodejs/is-palindrome/test/acceptance_manifest.test.js)** runs **`acceptance_manifest.json`** (`npm test` from that directory). **No npm dependencies** for the core; tests use **`node:test`** (Node 18+).
+
+### Reference implementation (C)
+
+**[`c/src/is_palindrome.c`](c/src/is_palindrome.c)** / **[`c/include/is_palindrome.h`](c/include/is_palindrome.h)** — core library (**ISO C + libc** only: `is_palindrome_from_bytes`, `is_palindrome_from_utf8`). **[`c/tests/acceptance_manifest.c`](c/tests/acceptance_manifest.c)** runs **`acceptance_manifest.json`** via **CMake** + **cJSON** (fetched by CMake; **test-only**, not linked into the core library). Configure/build from [`c/`](c/): `cmake -S . -B build`, `cmake --build build`, `ctest --test-dir build`.
 
 ---
 
@@ -204,3 +260,9 @@ The **intended** layout is **one library file** (e.g. `cs/IsPalindrome.cs`) plus
 | [`fixtures/acceptance_manifest.json`](fixtures/acceptance_manifest.json), [`fixtures/acceptance_matrix.md`](fixtures/acceptance_matrix.md), [`fixtures/README.md`](fixtures/README.md) | v1 rules, harness, requirements, error codes |
 | Architecture plan (logical `ByteSource`, US-ASCII alnum default, Option B async) | §6 and §2; previously maintained alongside this spec in Cursor |
 | **2025 revision** | §1 single-file norm; §2 validity without required options type + empty-custom fallback; §4 `EMPTY_CUSTOM_INVALID_SET` deprecated; §5 strict TDD steps + bulk-rewrite rule; §6 optional streaming architecture; one-file C# target |
+| **2025 revision (deps)** | §1 no cross-language runtime deps (no FFI / shared binaries); tight dependency rule (stdlib vs AWS SDK for S3); complexity **O(n)** and single-threaded logical design |
+| **2025 revision (CLI)** | §1 normative **command-line deliverable** (executable or script); library-only artifacts insufficient; single-file rule reframed as **core logic** with optional small CLI entry file; historical `fixtures/cli_manifest.json` + §4 harness item 7 |
+| **2025 revision (canonical CLI)** | §1 **single** Python canonical CLI; C#/C++ library-only ports + `acceptance_manifest` only; historical `fixtures/cli_manifest.json` + §4 harness item 7 apply to Python |
+| **2025 revision (CLI location)** | Canonical CLI moved to `fixtures/python_cli/` (removed in 2026); sample core remains [`py/is_palindrome/`](py/is_palindrome/) |
+| **2026 revision (fixtures.cli)** | §1 **`fixtures.cli`** dispatcher with `--impl`, subcommands `check` / `acceptance` / `test-native`; thin adapters per language; **`cli_manifest.json` removed** (CLI contract via `acceptance` + manifest); [`tools/run_all_tests.py`](tools/run_all_tests.py) + timestamped `reports/` |
+

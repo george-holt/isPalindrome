@@ -22,8 +22,14 @@ Cases live in [`acceptance_manifest.json`](acceptance_manifest.json).
 |------|-------|
 | `NON_ASCII_STRING_INPUT` | pal-str-002, pal-str-004 |
 
+## CLI tests
+
+| REQ ID | Meaning | Test IDs |
+|--------|---------|----------|
+| REQ-CLI-CONTRACT | `python -m fixtures.cli check` / `acceptance` obey §1 exit codes and stdout/stderr | `fixtures.cli` + [`acceptance_manifest.json`](acceptance_manifest.json) via `acceptance` subcommand |
+
 ## Profiles
 
 - **Core (all languages, byte API)**: all cases except those with `applies_to` set to string-only runtimes, unless you implement a string entry point.
-- **string_api**: `pal-str-*` — C#, JavaScript, Node; skip in C, Rust, Python if only `bytes` API.
+- **string_api**: `pal-str-*` — `applies_to` lists runtimes (e.g. C#, JavaScript, Node, **cpp**, **python**, **rust**, **c**); skip if your port is not listed or you only implement `bytes`.
 - **streaming_equivalence**: `pal-stream-note-001` — manual verification using file + S3 backends.

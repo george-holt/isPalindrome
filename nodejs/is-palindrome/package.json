@@ -1,0 +1,16 @@
+{
+  "name": "is-palindrome",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./isPalindrome.js",
+  "exports": {
+    ".": "./isPalindrome.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
