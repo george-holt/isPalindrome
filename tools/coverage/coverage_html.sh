@@ -104,7 +104,15 @@ PY
 find_rust_llvm_bin() {
   local ob cov
   ob="$(bazel info output_base)"
-  cov="$(find "$ob/external" -path '*rust_linux_*/lib/rustlib/*/bin/llvm-cov' -type f 2>/dev/null | head -1)"
+  # rules_rust external repo names vary (e.g. rust_linux_* vs rust_host_tools* with Bazel 7+).
+  # Prefer the host toolchain bin (matches the instrumented test run on this machine).
+  for pat in \
+    '*rust_host_tools*/lib/rustlib/*/bin/llvm-cov' \
+    '*rust_linux_*/lib/rustlib/*/bin/llvm-cov' \
+    '*/lib/rustlib/*/bin/llvm-cov'; do
+    cov="$(find "$ob/external" -path "$pat" -type f 2>/dev/null | head -1)"
+    [[ -n "$cov" ]] && break
+  done
   if [[ -z "$cov" ]]; then
     echo "could not find Rust llvm-cov under $ob/external (build //src/rust/is_palindrome:acceptance_test first)" >&2
     exit 1

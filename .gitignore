@@ -1,9 +1,10 @@
 # Bazel (workspace-root symlinks to output trees)
 /bazel-*
 
-# Build outputs
+# Build outputs (directories named bin/Obj at any path — e.g. .NET, generic dumps)
 [Bb]in/
-# Rust CLI crate sources (directory name is `bin`, not a generic build output)
+# Cargo puts *source* for extra binaries under src/bin/ (not Bazel/bazel-bin output).
+# Re-include so those .rs files are tracked; see CLI/BUILD.bazel rust_binary srcs.
 !CLI/src/bin/
 !CLI/src/bin/**
 [Oo]bj/
