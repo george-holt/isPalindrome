@@ -9,6 +9,7 @@ jobs:
   bazel:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +22,9 @@ jobs:
           node-version: "22"
 
       - name: Enable pnpm (corepack)
-        run: corepack enable && corepack prepare pnpm@9.15.9 --activate
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.9 --activate
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -32,18 +35,44 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends pkg-config zip unzip python3-coverage lcov
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            zip \
+            unzip \
+            python3-coverage \
+            lcov
+
           arch=$(dpkg --print-architecture)
           case "$arch" in
-            amd64) tinfo_url=http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb ;;
-            arm64) tinfo_url=http://ports.ubuntu.com/ubuntu-ports/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_arm64.deb ;;
-            *) echo "unsupported arch for libtinfo5: $arch" >&2; exit 1 ;;
+            amd64)
+              tinfo_url=http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb
+              ;;
+            arm64)
+              tinfo_url=http://ports.ubuntu.com/ubuntu-ports/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_arm64.deb
+              ;;
+            *)
+              echo "unsupported arch for libtinfo5: $arch" >&2
+              exit 1
+              ;;
           esac
+
           wget -q -O /tmp/libtinfo5.deb "$tinfo_url"
           sudo apt-get install -y /tmp/libtinfo5.deb
           rm -f /tmp/libtinfo5.deb
 
-      - uses: bazelbuild/setup-bazelisk@v2
+      - name: Check bazel toolchain
+        run: |
+          echo "bazel path: $(command -v bazel || echo not-found)"
+          echo "bazelisk path: $(command -v bazelisk || echo not-found)"
+          bazelisk version || true
+          bazel version || true
+
+          if [[ -f .bazelversion ]]; then
+            echo ".bazelversion contents:"
+            cat .bazelversion
+          else
+            echo "No .bazelversion file found"
+          fi
 
       - name: Install dotnet global tools (coverage)
         run: |
