@@ -20,13 +20,13 @@ Cases live in [`acceptance_manifest.json`](acceptance_manifest.json).
 
 | Code | Cases |
 |------|-------|
-| `NON_ASCII_STRING_INPUT` | pal-str-002, pal-str-004 |
+| `NON_ASCII_STRING_INPUT` | pal-str-002, pal-str-004, pal-str-malformed-001 (C/C++ byte-string only) |
 
 ## CLI tests
 
 | REQ ID | Meaning | Test IDs |
 |--------|---------|----------|
-| REQ-CLI-CONTRACT | `python -m fixtures.cli check` / `acceptance` obey §1 exit codes and stdout/stderr | `fixtures.cli` + [`acceptance_manifest.json`](acceptance_manifest.json) via `acceptance` subcommand |
+| REQ-CLI-CONTRACT | `is_palindrome_cli` and **`//fixtures:acceptance_manifest_cli`** (six parallel **`acceptance_manifest_cli_*`** shards) obey §1 exit codes and stdout/stderr | [`acceptance_manifest.json`](acceptance_manifest.json) via **`is_palindrome_cli`** (see [`fixtures/cli/acceptance_cmd.py`](cli/acceptance_cmd.py)) |
 
 ## Profiles
 

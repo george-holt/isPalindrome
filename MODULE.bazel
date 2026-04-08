@@ -1,0 +1,126 @@
+"""Bazel module — isPalindrome monorepo (Bazel-first builds/tests)."""
+
+module(
+    name = "is_palindrome_workspace",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_cc", version = "0.2.16")
+bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "rules_python", version = "1.7.0")
+bazel_dep(name = "rules_rust", version = "0.69.0")
+bazel_dep(name = "toolchains_llvm", version = "1.6.0")
+bazel_dep(name = "aspect_rules_js", version = "3.0.3")
+# Root module must declare rules_nodejs to use the `node` extension (bzlmod).
+bazel_dep(name = "rules_nodejs", version = "6.7.3")
+bazel_dep(name = "rules_dotnet", version = "0.21.5")
+
+# --- Hermetic .NET SDK (rules_dotnet) for //src/cs ---
+dotnet = use_extension("@rules_dotnet//dotnet:extensions.bzl", "dotnet")
+dotnet.toolchain(dotnet_version = "8.0.416")
+use_repo(dotnet, "dotnet_toolchains")
+
+# --- Hermetic Node.js (rules_nodejs) + npm deps (aspect_rules_js / pnpm lockfile) ---
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
+node.toolchain()
+use_repo(node, "nodejs_toolchains")
+
+pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm")
+pnpm.pnpm(pnpm_version_from = "//src/nodejs/ispalindrome:package.json")
+use_repo(pnpm, "pnpm")
+
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")
+npm.npm_translate_lock(
+    name = "npm",
+    data = ["//src/nodejs/ispalindrome:package.json"],
+    pnpm_lock = "//src/nodejs/ispalindrome:pnpm-lock.yaml",
+    update_pnpm_lock = False,
+)
+use_repo(npm, "npm")
+
+# --- Hermetic LLVM (Clang) for rules_cc + coverage ---
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+llvm.toolchain(
+    name = "llvm_toolchain",
+    cxx_standard = {"": "c++20"},
+    # Linux x86_64/arm64 + macOS archives from toolchains_llvm.
+    llvm_version = "18.1.8",
+)
+use_repo(llvm, "llvm_toolchain", "llvm_toolchain_llvm")
+
+# --- Rust toolchain + crates from workspace Cargo.lock ---
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.85.1"],
+)
+use_repo(rust, "rust_toolchains")
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//:Cargo.lock",
+    manifests = ["//:Cargo.toml"],
+)
+use_repo(crate, "crates")
+
+# --- Third-party C/C++ sources (BUILD fragments in //third_party) ---
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "catch2",
+    build_file = "//third_party:catch2.BUILD",
+    integrity = "sha256-t3VLcRJCwWfY9guJBpU0f5Ch68lZSaBFOFEUFl1gbbs=",
+    strip_prefix = "Catch2-3.5.4",
+    urls = ["https://github.com/catchorg/Catch2/archive/refs/tags/v3.5.4.tar.gz"],
+)
+
+http_archive(
+    name = "nlohmann_json",
+    build_file = "//third_party:nlohmann_json.BUILD",
+    integrity = "sha256-DY71r3+XlOMmNIAZPEkVSbK6bMdLsBiQYgKtpJinlAY=",
+    strip_prefix = "json-3.11.3",
+    urls = ["https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz"],
+)
+
+http_archive(
+    name = "cjson",
+    build_file = "//third_party:cjson.BUILD",
+    integrity = "sha256-OqgGhEoDRCwAdpuD6ZlwvnD77wNzX/iY9IEd0DufXuU=",
+    strip_prefix = "cJSON-1.7.18",
+    urls = ["https://github.com/DaveGamble/cJSON/archive/refs/tags/v1.7.18.tar.gz"],
+)
+
+# Python runtime for py_test / py_library
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    configure_coverage_tool = True,
+    is_default = True,
+    python_version = "3.12",
+)
+use_repo(python, "python_3_12")
+
+register_toolchains(
+    "@dotnet_toolchains//:all",
+    "@rust_toolchains//:all",
+    "@llvm_toolchain//:all",
+    "@python_3_12//:all",
+    "@nodejs_toolchains//:linux_amd64_runtime_toolchain",
+    "@nodejs_toolchains//:linux_amd64_toolchain",
+    "@nodejs_toolchains//:linux_arm64_runtime_toolchain",
+    "@nodejs_toolchains//:linux_arm64_toolchain",
+    "@nodejs_toolchains//:linux_s390x_runtime_toolchain",
+    "@nodejs_toolchains//:linux_s390x_toolchain",
+    "@nodejs_toolchains//:linux_ppc64le_runtime_toolchain",
+    "@nodejs_toolchains//:linux_ppc64le_toolchain",
+    "@nodejs_toolchains//:darwin_amd64_runtime_toolchain",
+    "@nodejs_toolchains//:darwin_amd64_toolchain",
+    "@nodejs_toolchains//:darwin_arm64_runtime_toolchain",
+    "@nodejs_toolchains//:darwin_arm64_toolchain",
+    "@nodejs_toolchains//:windows_amd64_runtime_toolchain",
+    "@nodejs_toolchains//:windows_amd64_toolchain",
+    "@nodejs_toolchains//:windows_arm64_runtime_toolchain",
+    "@nodejs_toolchains//:windows_arm64_toolchain",
+)

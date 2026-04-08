@@ -1,0 +1,48 @@
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+
+package(default_visibility = ["//visibility:public"])
+
+sh_test(
+    name = "host_toolchains",
+    size = "small",
+    srcs = ["host_toolchains.sh"],
+)
+
+sh_test(
+    name = "coverage_report_syntax",
+    size = "small",
+    srcs = ["coverage_report_syntax_test.sh"],
+    data = [
+        "bazel-coverage.sh",
+        "bazel_coverage_html.sh",
+        "//tools/coverage:coverage_html.sh",
+        "coverage_report.sh",
+        "normalize_coverage_paths.py",
+        "normalize_coverage_paths_test.sh",
+    ],
+)
+
+sh_test(
+    name = "coverage_report_pnpm_bootstrap",
+    size = "small",
+    srcs = ["coverage_report_pnpm_bootstrap_test.sh"],
+    data = ["bazel-coverage.sh"],
+)
+
+sh_test(
+    name = "coverage_html_cs_row",
+    size = "small",
+    srcs = ["coverage_html_cs_row_test.sh"],
+    data = ["//tools/coverage:coverage_html.sh"],
+)
+
+sh_test(
+    name = "normalize_coverage_paths",
+    size = "small",
+    srcs = ["normalize_coverage_paths_test.sh"],
+    data = [
+        "normalize_coverage_paths.py",
+        "testdata/coverage_normalize/sample_proc_cwd.lcov",
+        "testdata/coverage_normalize/sample_cobertura.xml",
+    ],
+)

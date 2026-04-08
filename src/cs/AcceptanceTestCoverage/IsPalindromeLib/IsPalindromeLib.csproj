@@ -1,0 +1,14 @@
+<!-- MSBuild mirror of //src/cs:is_palindrome_lib (dotnet test + coverlet only; sources stay shared with Bazel). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>IsPalindrome</RootNamespace>
+    <AssemblyName>IsPalindromeLib</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\IsPalindrome.cs" />
+  </ItemGroup>
+</Project>

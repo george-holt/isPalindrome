@@ -1,12 +1,17 @@
+# Bazel (workspace-root symlinks to output trees)
+/bazel-*
+
 # Build outputs
 [Bb]in/
 [Oo]bj/
-cpp/build/
-cpp/out/
-rust/**/target/
-nodejs/**/node_modules/
-c/build/
-c/out/
+# Cargo workspace output at repository root
+/target/
+src/cpp/build/
+src/cpp/out/
+src/rust/**/target/
+src/nodejs/**/node_modules/
+src/c/build/
+src/c/out/
 reports/
 
 [Dd]ebug/
@@ -76,6 +81,11 @@ artifacts/
 *.trx
 *.coverage
 *.coveragexml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
 # OS
 .DS_Store

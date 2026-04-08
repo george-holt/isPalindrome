@@ -1,0 +1,3 @@
+[workspace]
+members = ["src/rust/is_palindrome", "CLI"]
+resolver = "2"

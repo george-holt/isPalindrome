@@ -1,0 +1,37 @@
+load(
+    "@rules_dotnet//dotnet:defs.bzl",
+    "csharp_binary",
+    "csharp_library",
+    "csharp_test",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+csharp_library(
+    name = "is_palindrome_lib",
+    srcs = ["IsPalindrome.cs"],
+    nullable = "enable",
+    target_frameworks = ["net8.0"],
+)
+
+csharp_binary(
+    name = "stdin_json_adapter",
+    srcs = ["StdinJsonAdapter/Program.cs"],
+    deps = [":is_palindrome_lib"],
+    nullable = "enable",
+    out = "StdinJsonAdapter",
+    target_frameworks = ["net8.0"],
+)
+
+csharp_test(
+    name = "acceptance_test",
+    srcs = ["AcceptanceTest.cs"],
+    data = ["//fixtures:acceptance_manifest.json"],
+    defines = ["BAZEL_TEST"],
+    deps = [
+        ":is_palindrome_lib",
+        "@rules_dotnet//tools/runfiles",
+    ],
+    nullable = "enable",
+    target_frameworks = ["net8.0"],
+)

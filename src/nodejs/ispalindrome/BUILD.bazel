@@ -1,0 +1,22 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library", "js_test")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+package(default_visibility = ["//visibility:public"])
+
+npm_link_all_packages(name = "node_modules")
+
+js_library(
+    name = "is_palindrome_lib",
+    srcs = ["isPalindrome.js"],
+)
+
+js_test(
+    name = "acceptance_test",
+    size = "small",
+    chdir = package_name(),
+    data = [
+        ":is_palindrome_lib",
+        "//fixtures:acceptance_manifest_json",
+    ],
+    entry_point = "acceptance_manifest.test.mjs",
+)

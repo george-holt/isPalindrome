@@ -18,6 +18,7 @@ All implementations in this repo must use **strict test-driven development**:
 |------|---------|
 | [acceptance_manifest.json](acceptance_manifest.json) | **Source of truth**: all test cases (machine-readable JSON). |
 | [acceptance_matrix.md](acceptance_matrix.md) | Requirement → test traceability. |
+| [manifest_cases.py](manifest_cases.py) | Small helpers for Python `acceptance_test` (same iteration rules as other languages). |
 
 Edit **`acceptance_manifest.json`** directly when adding or changing cases. Quick validation:
 
@@ -25,22 +26,27 @@ Edit **`acceptance_manifest.json`** directly when adding or changing cases. Quic
 python -m json.tool acceptance_manifest.json
 ```
 
-## Canonical CLI (`fixtures.cli`)
+## Canonical tests and CLI
 
-The **only** user-facing CLI is [`cli/`](cli/) — run from the **repository root**:
+**Primary:** each language has a Bazel **`acceptance_test`** that reads **`acceptance_manifest.json`** and calls that language’s library **in-process** (`bazel test //...`).
+
+**CLI (optional / teaching):** the Rust binary **`is_palindrome_cli`** multiplexes backends via subprocesses and thin adapters:
 
 ```bash
-python -m fixtures.cli check --impl py aba
-python -m fixtures.cli check --impl py --hex 61ff62
-python -m fixtures.cli acceptance --impl py
-python -m fixtures.cli test-native
+bazel run //CLI:is_palindrome_cli -- aba
+bazel run //CLI:is_palindrome_cli -- --impl py aba
+bazel test //fixtures:acceptance_manifest_cli   # manual: subprocess matrix
 ```
 
-- **`check`** — palindrome check. **`--impl`** selects the backend (`py`, `cpp`, `c`, `rust`, `cs`, `nodejs`; default `py`). Non-Python backends use thin stdin-JSON adapters in each language tree.
-- **`acceptance`** — runs every applicable row in **`acceptance_manifest.json`** by invoking `check` (end-to-end). `applies_to` uses short ids aligned with top-level directories (`py`, `cs`, `nodejs`, …).
-- **`test-native`** — runs [`../tools/run_all_tests.py`](../tools/run_all_tests.py) (native unit/integration matrix, timestamped HTML under `reports/<timestamp>/`). A missing toolchain **fails** the run (strict).
+- **`is_palindrome_cli`** — argv parsing, **`--impl`**, **`--hex`**, **`--custom`**, exit codes **0** / **1** / **2**. See [`SPEC.md`](../SPEC.md) §1.
+- **`//fixtures:acceptance_manifest_cli`** — six parallel **`sh_test`** shards; tagged **`manual`** so default **`bazel test //...`** runs the direct **`acceptance_test`** targets instead.
 
-**Migration:** the old module was `fixtures.python_cli`; **`cli_manifest.json` has been removed** — CLI behavior is covered by **`acceptance`** + **`acceptance_manifest.json`**.
+**Python helpers** under [`cli/`](cli/) (optional):
+
+```bash
+PYTHONPATH=. python3 -m fixtures.cli acceptance --impl rust
+python3 -m fixtures.cli test-native    # runs: bazel test //...
+```
 
 ## Harness rules
 

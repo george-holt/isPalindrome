@@ -1,0 +1,15 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["MODULE.bazel"])
+
+test_suite(
+    name = "all_tests",
+    tags = ["manual"],
+    tests = [
+        "//CLI:all_cli_tests",
+        "//tools:host_toolchains",
+        "//tools:coverage_report_syntax",
+        "//tools:coverage_report_pnpm_bootstrap",
+        "//fixtures:acceptance_manifest_cli",
+    ],
+)

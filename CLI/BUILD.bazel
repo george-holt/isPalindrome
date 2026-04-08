@@ -1,0 +1,86 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "is_palindrome_cli_lib",
+    srcs = ["src/lib.rs"],
+    aliases = aliases(),
+    crate_name = "is_palindrome_cli",
+    edition = "2021",
+    deps = ["//src/rust/is_palindrome:is_palindrome_lib"] + all_crate_deps(
+        normal = True,
+        proc_macro = True,
+    ),
+)
+
+rust_binary(
+    name = "stdin_json_adapter",
+    srcs = ["src/bin/stdin_json_adapter.rs"],
+    aliases = aliases(),
+    edition = "2021",
+    deps = ["//src/rust/is_palindrome:is_palindrome_lib"] + all_crate_deps(
+        normal = True,
+        proc_macro = True,
+    ),
+)
+
+rust_binary(
+    name = "is_palindrome_cli",
+    srcs = ["src/bin/is_palindrome_cli.rs"],
+    aliases = aliases(),
+    edition = "2021",
+    deps = [":is_palindrome_cli_lib"] + all_crate_deps(
+        normal = True,
+        proc_macro = True,
+    ),
+)
+
+rust_test(
+    name = "cli_integration_test",
+    size = "small",
+    srcs = ["tests/cli_integration.rs"],
+    aliases = aliases(),
+    data = [
+        ":is_palindrome_cli",
+        ":stdin_json_adapter",
+        "//:MODULE.bazel",
+        "//fixtures:acceptance_manifest.json",
+        "//src/py:is_palindrome_py_sources",
+    ],
+    edition = "2021",
+    deps = [":is_palindrome_cli_lib"] + all_crate_deps(
+        normal = True,
+        normal_dev = True,
+        proc_macro = True,
+        proc_macro_dev = True,
+    ),
+)
+
+rust_test(
+    name = "cli_unit_test",
+    size = "small",
+    srcs = ["tests/cli_unit.rs"],
+    aliases = aliases(),
+    data = [
+        ":stdin_json_adapter",
+        "//:MODULE.bazel",
+        "//fixtures:acceptance_manifest.json",
+    ],
+    edition = "2021",
+    deps = [":is_palindrome_cli_lib"] + all_crate_deps(
+        normal = True,
+        normal_dev = True,
+        proc_macro = True,
+        proc_macro_dev = True,
+    ),
+)
+
+test_suite(
+    name = "all_cli_tests",
+    tests = [
+        ":cli_integration_test",
+        ":cli_unit_test",
+    ],
+)

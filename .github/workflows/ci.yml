@@ -6,11 +6,9 @@ on:
   pull_request:
 
 jobs:
-  full-matrix:
+  bazel:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      PYTHONPATH: ${{ github.workspace }}
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +20,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Enable pnpm (corepack)
+        run: corepack enable && corepack prepare pnpm@9.15.9 --activate
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: actions/setup-dotnet@v4
@@ -31,17 +32,54 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake ninja-build build-essential
+          sudo apt-get install -y --no-install-recommends pkg-config zip unzip python3-coverage lcov
+          arch=$(dpkg --print-architecture)
+          case "$arch" in
+            amd64) tinfo_url=http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb ;;
+            arm64) tinfo_url=http://ports.ubuntu.com/ubuntu-ports/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_arm64.deb ;;
+            *) echo "unsupported arch for libtinfo5: $arch" >&2; exit 1 ;;
+          esac
+          wget -q -O /tmp/libtinfo5.deb "$tinfo_url"
+          sudo apt-get install -y /tmp/libtinfo5.deb
+          rm -f /tmp/libtinfo5.deb
 
-      - name: Configure and build C and C++
+      - uses: bazelbuild/setup-bazelisk@v1
+
+      - name: Install dotnet global tools (coverage)
         run: |
-          cmake -S cpp -B cpp/build
-          cmake --build cpp/build
-          cmake -S c -B c/build
-          cmake --build c/build
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          dotnet tool install -g dotnet-coverage
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
-      - name: Toolchain check
-        run: python3 tools/check_toolchain.py
+      - name: Mount Bazel disk cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-${{ runner.os }}-${{ hashFiles('.bazelversion', 'MODULE.bazel', 'Cargo.lock', 'src/nodejs/ispalindrome/pnpm-lock.yaml') }}
+          restore-keys: |
+            bazel-${{ runner.os }}-
 
-      - name: Full test matrix
-        run: python3 tools/run_all_tests.py
+      - name: Bazel test
+        run: bazel test //...
+
+      - name: Unified coverage (CLI tests + manifest acceptance)
+        run: ./tools/bazel-coverage.sh
+
+      - name: Collect Bazel test logs
+        if: failure()
+        run: |
+          OP="$(bazel info output_path)"
+          mkdir -p bazel-testlogs
+          for d in "$OP"/*/testlogs; do
+            if [[ -d "$d" ]]; then
+              cp -a "$d" bazel-testlogs/
+            fi
+          done
+
+      - name: Upload Bazel test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bazel-testlogs
+          path: bazel-testlogs
+          if-no-files-found: ignore

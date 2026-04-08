@@ -1,0 +1,14 @@
+common --incompatible_strict_action_env
+
+build --show_timestamps
+build --experimental_remote_cache_eviction_retries=3
+
+test --test_output=errors
+# Allow subprocess tests (e.g. CLI `--impl py` / `all`) to find host python3, dotnet, node.
+test --action_env=PATH
+test --test_env=PATH
+
+# `bazel coverage`: emit LLVM LCOV for all cc_test (C and C++), not raw .profdata the merger skips.
+coverage --combined_report=lcov
+coverage --experimental_generate_llvm_lcov
+coverage --instrumentation_filter=^//src/c[/:],^//CLI[/:],^//src/cpp[/:],^//src/cs[/:],^//src/nodejs/ispalindrome[/:],^//src/py[/:],^//src/rust/is_palindrome[/:],^//tools[/:]

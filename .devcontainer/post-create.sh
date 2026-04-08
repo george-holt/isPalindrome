@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
-# First-time container setup: native C/C++ builds (needed for ctest in run_all_tests).
+# First-time container setup: confirm Bazel + host tools (see //tools:host_toolchains).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "==> CMake: cpp (requires >= 3.24)"
-cmake -S cpp -B cpp/build
-cmake --build cpp/build
+echo "==> Bazel (via bazelisk at /usr/local/bin/bazel)"
+bazel version
 
-echo "==> CMake: c"
-cmake -S c -B c/build
-cmake --build c/build
+echo "==> Toolchain smoke test"
+bazel test //tools:host_toolchains
 
-echo "==> Toolchain check"
-python3 tools/check_toolchain.py
-
-echo "==> post-create done"
+echo "==> post-create done (run 'bazel test //...' for the full matrix)"

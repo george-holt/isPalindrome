@@ -1,0 +1,19 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@rules_python//python:defs.bzl", "py_library")
+load(":acceptance_manifest_cli.bzl", "acceptance_manifest_cli_suite")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["acceptance_manifest.json"])
+
+py_library(
+    name = "manifest_cases",
+    srcs = ["manifest_cases.py"],
+)
+
+js_library(
+    name = "acceptance_manifest_json",
+    srcs = ["acceptance_manifest.json"],
+)
+
+acceptance_manifest_cli_suite()

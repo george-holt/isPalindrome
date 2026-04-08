@@ -1,0 +1,7 @@
+# BUILD fragments for http_archives (see MODULE.bazel).
+
+exports_files([
+    "catch2.BUILD",
+    "nlohmann_json.BUILD",
+    "cjson.BUILD",
+])

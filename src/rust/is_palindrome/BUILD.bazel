@@ -1,0 +1,36 @@
+load("@crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "is_palindrome_lib",
+    srcs = glob(
+        ["src/**/*.rs"],
+        exclude = ["src/bin/**"],
+    ),
+    aliases = aliases(),
+    crate_name = "is_palindrome",
+    crate_root = "src/lib.rs",
+    edition = "2021",
+    deps = all_crate_deps(
+        normal = True,
+        proc_macro = True,
+    ),
+)
+
+rust_test(
+    name = "acceptance_test",
+    size = "small",
+    srcs = ["tests/acceptance_manifest_test.rs"],
+    aliases = aliases(),
+    crate_root = "tests/acceptance_manifest_test.rs",
+    edition = "2021",
+    deps = [":is_palindrome_lib"] + all_crate_deps(
+        normal = True,
+        normal_dev = True,
+        proc_macro = True,
+        proc_macro_dev = True,
+    ),
+    data = ["//fixtures:acceptance_manifest.json"],
+)

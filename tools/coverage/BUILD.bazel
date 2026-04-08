@@ -1,0 +1,29 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "coverage_all.sh",
+    "coverage_html.sh",
+    "cs_coverage.sh",
+    ".config/dotnet-tools.json",
+])
+
+# Preferred coverage entrypoint (per-language HTML + top-level index under reports/coverage/).
+sh_binary(
+    name = "html",
+    srcs = ["coverage_html.sh"],
+)
+
+sh_binary(
+    name = "cs",
+    srcs = ["cs_coverage.sh"],
+)
+
+# Polyglot orchestrator: Bazel coverage + dotnet/coverlet do not share one native graph here.
+# (Named ``full`` not ``all`` to avoid Bazel's ``:all`` wildcard ambiguity.)
+sh_binary(
+    name = "full",
+    srcs = ["coverage_all.sh"],
+    data = ["coverage_html.sh"],
+)

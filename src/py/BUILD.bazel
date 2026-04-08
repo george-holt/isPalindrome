@@ -1,0 +1,35 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# Algorithm only (SPEC §2–§3). Coverage is attributed from ``acceptance_test``, not CLI subprocesses.
+py_library(
+    name = "is_palindrome_lib",
+    srcs = [
+        "is_palindrome/__init__.py",
+        "is_palindrome/palindrome.py",
+    ],
+    imports = ["."],
+)
+
+# All Python sources under ``is_palindrome/`` for ``//CLI`` runfiles (``--impl py`` still shells out).
+filegroup(
+    name = "is_palindrome_py_sources",
+    srcs = glob(["is_palindrome/**/*.py"]),
+)
+
+py_test(
+    name = "acceptance_test",
+    size = "small",
+    srcs = ["tests/acceptance_test.py"],
+    main = "tests/acceptance_test.py",
+    deps = [
+        ":is_palindrome_lib",
+        "//fixtures:manifest_cases",
+    ],
+    data = ["//fixtures:acceptance_manifest.json"],
+    imports = [
+        ".",
+        "../..",
+    ],
+)

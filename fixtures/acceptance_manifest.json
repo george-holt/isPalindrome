@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "description": "Language-neutral acceptance tests for isPalindrome v1 (ASCII bytes, dual cursors).",
+  "description": "Language-neutral acceptance tests for isPalindrome v1 (ASCII bytes, dual cursors). For expected.kind \"error\", optional expected.message is the canonical user-facing exception text (e.g. C++ palindrome_exception::what()); harnesses assert it only when their language exposes that string.",
   "error_codes": {
-    "NON_ASCII_STRING_INPUT": "C#/JS string API only: input contains a scalar value > U+007F."
+    "NON_ASCII_STRING_INPUT": "String / UTF-8 byte entry point: reject non-ASCII (scalar > U+007F) or any UTF-8 byte with high bit set (includes malformed sequences for C/C++ byte APIs)."
   },
   "cases": [
     {
@@ -78,6 +78,22 @@
       "expected": { "kind": "boolean", "value": true }
     },
     {
+      "id": "pal-delim-005",
+      "category": "delimiters_default",
+      "requirement_refs": ["REQ-DUAL-CURSOR", "REQ-DEFAULT-ALNUM"],
+      "input_ascii": ".,.a.,.....",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": true }
+    },
+    {
+      "id": "pal-delim-006",
+      "category": "delimiters_default",
+      "requirement_refs": ["REQ-DUAL-CURSOR", "REQ-DEFAULT-ALNUM"],
+      "input_ascii": ".,,,,,,,,.a.,.",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": true }
+    },
+    {
       "id": "pal-case-001",
       "category": "case_insensitive",
       "requirement_refs": ["REQ-ASCII-CASE-FOLD"],
@@ -92,6 +108,32 @@
       "input_ascii": "Aa",
       "options": { "invalid_mode": "default" },
       "expected": { "kind": "boolean", "value": true }
+    },
+    {
+      "id": "pal-digit-001",
+      "category": "alnum_digits",
+      "requirement_refs": ["REQ-DEFAULT-ALNUM", "REQ-CORE-LOOP"],
+      "input_ascii": "121",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": true },
+      "notes": "Digit pairs use exact byte equality (not letter case-folding)."
+    },
+    {
+      "id": "pal-digit-002",
+      "category": "alnum_digits",
+      "requirement_refs": ["REQ-DEFAULT-ALNUM", "REQ-CORE-LOOP"],
+      "input_ascii": "12",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": false }
+    },
+    {
+      "id": "pal-digit-003",
+      "category": "alnum_digits",
+      "requirement_refs": ["REQ-DEFAULT-ALNUM", "REQ-CORE-LOOP"],
+      "input_ascii": "1a1",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": true },
+      "notes": "Outer pair is digit-digit; center is a single letter."
     },
     {
       "id": "pal-high-001",
@@ -218,6 +260,40 @@
       "options": { "invalid_mode": "default" },
       "expected": { "kind": "error", "code": "NON_ASCII_STRING_INPUT" },
       "notes": "Smallest scalar rejected by string API rule."
+    },
+    {
+      "id": "pal-str-005",
+      "category": "string_api",
+      "requirement_refs": ["REQ-VACUOUS-TRUE", "REQ-STRING-API-ASCII"],
+      "applies_to": ["py", "cs", "nodejs", "cpp", "rust", "c"],
+      "input_ascii": "",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "boolean", "value": true },
+      "notes": "Empty string must use string entry point (not byte-only); vacuous true."
+    },
+    {
+      "id": "pal-str-malformed-001",
+      "category": "string_api",
+      "requirement_refs": ["REQ-STRING-API-NON-ASCII"],
+      "applies_to": ["c", "cpp"],
+      "input_utf8_hex": "80",
+      "options": { "invalid_mode": "default" },
+      "expected": { "kind": "error", "code": "NON_ASCII_STRING_INPUT" },
+      "notes": "Lone continuation byte; C/C++ byte-string API uses same error as non-ASCII (no separate invalid-UTF-8 code)."
+    },
+    {
+      "id": "pal-str-cpp-exception-what-001",
+      "category": "string_api",
+      "requirement_refs": ["REQ-STRING-API-NON-ASCII"],
+      "applies_to": ["cpp"],
+      "input_utf8_hex": "c3a9",
+      "options": { "invalid_mode": "default" },
+      "expected": {
+        "kind": "error",
+        "code": "NON_ASCII_STRING_INPUT",
+        "message": "Input contains a scalar value > U+007F."
+      },
+      "notes": "C++ only: locks palindrome_exception::what() to the canonical std::exception message. Same UTF-8 as pal-str-002; separate id so reviewers see this contract in the manifest."
     },
     {
       "id": "pal-stream-note-001",

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>IsPalindrome</RootNamespace>
+    <AssemblyName>IsPalindrome</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Console adapter is a separate project; SDK default glob would pull it into this library. -->
+    <Compile Remove="StdinJsonAdapter/**" />
+  </ItemGroup>
+</Project>

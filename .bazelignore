@@ -1,0 +1,7 @@
+# Leftover native build trees (historical CMake); not part of the Bazel graph.
+src/c/build
+src/cpp/build
+
+# Coverage output: virtual/workspace symlinks to the repo root for ReportGenerator;
+# Bazel must not traverse it (infinite symlink expansion + bogus package paths).
+reports

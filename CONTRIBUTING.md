@@ -1,6 +1,6 @@
 # Contributing and development setup
 
-This repository ships **multiple language ports** (Python, Rust, C#, Node.js, C++, C) and one **shared fixture/CLI** layer. You need every toolchain listed below if you want `tools/run_all_tests.py` to go fully green locally. For how tests are structured (file-scoped vs manifest-driven) and **`--verbose` / `VERBOSE=1`**, see [docs/testing.md](docs/testing.md).
+This repository ships **multiple language ports** (Python, Rust, C#, Node.js, C++, C) and shared **fixtures**. The **canonical palindrome CLI** is **Rust** (`is_palindrome_cli`); use **Bazel** to build and run it. For how tests are structured (file-scoped vs manifest-driven) and **`--verbose` / `VERBOSE=1`**, see [docs/testing.md](docs/testing.md).
 
 ## Fast path: Dev Container (recommended)
 
@@ -26,7 +26,7 @@ This repo’s environment is defined by [`.devcontainer/devcontainer.json`](.dev
 
 After a `git pull` that changes `.devcontainer/`, use **`Dev Containers: Rebuild Container`** (same Command Palette) so the container matches the repo.
 
-**Check that you are inside the container:** in the integrated terminal, `cmake --version` should succeed and `uname` should report **Linux** (not Windows).
+**Check that you are inside the container:** in the integrated terminal, `bazel version` should succeed and `uname` should report **Linux** (not Windows).
 
 ### 3. Optional: command line (no editor attach)
 
@@ -47,62 +47,66 @@ Install the CLI once, for example: `npm install -g @devcontainers/cli` (requires
 
 ### What the container provides
 
-The Dockerfile installs **Python 3.12** (Ubuntu), **Rust (stable)** via rustup, **Node.js 22** (NodeSource), **.NET SDK 8**, **CMake**, **Ninja**, **`build-essential`** (GCC/G++), and **`pkg-config`**. On first create, **[`.devcontainer/post-create.sh`](.devcontainer/post-create.sh)** configures and builds **`cpp/build`** and **`c/build`** so `ctest` works for the matrix.
+The Dockerfile installs **Python 3.12** (Ubuntu), **Rust (stable)** via rustup, **Node.js 22** (NodeSource), **.NET SDK 8**, **`build-essential`** (GCC/G++), **`pkg-config`**, and **Bazelisk** as `bazel`. On first create, **[`.devcontainer/post-create.sh`](.devcontainer/post-create.sh)** runs a small Bazel smoke test (`//tools:host_toolchains`).
 
-`PYTHONPATH` is set to the workspace root so `python -m fixtures.cli …` resolves the `fixtures` package without extra steps.
+`PYTHONPATH` may be set to the workspace root when running **Python tooling** (e.g. `python -m fixtures.cli acceptance`); it is **not** required for **`bazel run //CLI:is_palindrome_cli`**.
 
 ## Prerequisites (local install)
 
 | Tool | Notes |
 |------|--------|
-| **Python** | 3.10+ recommended; 3.12 matches CI and the devcontainer. |
+| **Bazel** | [Bazelisk](https://github.com/bazelbuild/bazelisk) recommended; see `.bazelversion`. |
+| **Python** | 3.10+ for tooling scripts; 3.12 matches CI and the devcontainer. |
 | **Rust** | `rustup` + stable toolchain; `cargo` / `rustc` on `PATH`. |
-| **Node.js** | ≥ 18 per [`nodejs/is-palindrome/package.json`](nodejs/is-palindrome/package.json) (`engines`); CI uses **22**. |
-| **.NET SDK** | **8.0** (matches [`cs/IsPalindrome.csproj`](cs/IsPalindrome.csproj)). |
-| **CMake** | **≥ 3.24** for [`cpp/CMakeLists.txt`](cpp/CMakeLists.txt); **≥ 3.16** for [`c/CMakeLists.txt`](c/CMakeLists.txt). `ctest` must be on `PATH` (it ships with CMake). |
-| **C/C++ compiler** | GCC or Clang on Linux/macOS; **Visual Studio** build tools (or similar) on Windows, or use **WSL** / the **devcontainer**. |
+| **Node.js** | ≥ 18 per [`src/nodejs/ispalindrome/package.json`](src/nodejs/ispalindrome/package.json) (`engines`); **Bazel tests** use the pinned toolchain from [rules_nodejs](https://github.com/bazel-contrib/rules_nodejs) (see `MODULE.bazel`). |
+| **.NET SDK** | **8.0** (matches [`src/cs/IsPalindrome.csproj`](src/cs/IsPalindrome.csproj)). |
+| **C/C++ compiler** | GCC or Clang on Linux/macOS; **Visual Studio** build tools (or similar) on Windows, or use **WSL** / the **devcontainer**. Bazel builds C/C++ via `cc_library` / `cc_test` (see `src/c/BUILD.bazel`, `src/cpp/BUILD.bazel`). |
 
-Tests download dependencies via **CMake FetchContent** and **Cargo**/`npm` on first run (network required).
+Tests and builds are **Bazel-first** (`bazel test //...`). Dependencies are fetched by Bazel (C/C++ archives, Node via the lockfile under `src/nodejs/ispalindrome/`, Rust crates via `Cargo.lock` for `rules_rust`) on first run (network required for those fetches).
 
 ## After cloning
 
 From the **repository root**:
 
-1. **Check tools** (optional but quick):
+1. **Palindrome CLI (Rust):**
 
    ```bash
-   python3 tools/check_toolchain.py
+   bazel run //CLI:is_palindrome_cli -- aba
    ```
 
-2. **Configure native builds** (required for `cpp_acceptance` / `c_acceptance` in `run_all_tests.py`):
+2. **Build C/C++ stdin JSON adapters** (required for **`--impl c`** / **`--impl cpp`** in `is_palindrome_cli`; the CLI looks under `bazel-bin/`):
 
    ```bash
-   cmake -S cpp -B cpp/build && cmake --build cpp/build
-   cmake -S c -B c/build && cmake --build c/build
+   bazel build //src/c:stdin_json_adapter //src/cpp:stdin_json_adapter
    ```
 
-3. **Run the full matrix**:
+3. **Full test matrix:**
 
    ```bash
-   python3 tools/run_all_tests.py
+   bazel test //...
    ```
 
-   On success, open the printed path to `reports/<timestamp>/index.html`.
-
-4. **CLI smoke** (see [`fixtures/README.md`](fixtures/README.md)):
+4. **Manifest acceptance (end-to-end via `is_palindrome_cli`):**
 
    ```bash
-   python3 -m fixtures.cli check --impl py aba
-   python3 -m fixtures.cli acceptance --impl py
+   bazel test //fixtures:acceptance_manifest_cli
+   ```
+
+   That target is a **`test_suite`** of six **`sh_test`** shards (`acceptance_manifest_cli_c`, `_cpp`, `_cs`, `_nodejs`, `_py`, `_rust`) so Bazel can run backends in parallel. To run one backend: e.g. `bazel test //fixtures:acceptance_manifest_cli_cs`.
+
+   Optional Python entry (same behavior, requires `PYTHONPATH=.` from repo root):
+
+   ```bash
+   PYTHONPATH=. python3 -m fixtures.cli acceptance --impl rust
    ```
 
 Use `python` instead of `python3` on Windows if that is how Python is installed.
 
 ## CI
 
-GitHub Actions runs the same native matrix (configure C/C++, then `python tools/run_all_tests.py`) on **Ubuntu 24.04** — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions runs **`bazel test //...`** on **Ubuntu 24.04** — see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Version pins
 
-- **Rust:** [`rust/is_palindrome/rust-toolchain.toml`](rust/is_palindrome/rust-toolchain.toml) pins the **stable** channel for that crate.
+- **Rust:** [`src/rust/is_palindrome/rust-toolchain.toml`](src/rust/is_palindrome/rust-toolchain.toml) and [`CLI/rust-toolchain.toml`](CLI/rust-toolchain.toml) pin the **stable** channel for the library and CLI crates.
 - **Node:** `engines` in `package.json` (see above).
