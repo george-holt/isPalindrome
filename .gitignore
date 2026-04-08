@@ -3,6 +3,9 @@
 
 # Build outputs
 [Bb]in/
+# Rust CLI crate sources (directory name is `bin`, not a generic build output)
+!CLI/src/bin/
+!CLI/src/bin/**
 [Oo]bj/
 # Cargo workspace output at repository root
 /target/
