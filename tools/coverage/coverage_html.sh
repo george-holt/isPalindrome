@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-shot coverage HTML: direct ``acceptance_test`` targets + shared manifest.
-# Rust uses ``llvm-cov`` on the instrumented test binary (Bazel merged LCOV often misses rlib lines).
+# Rust uses ``llvm-cov``/``llvm-profdata`` from ``//tools/coverage:rust_llvm_tools`` (exec Rust toolchain)
+# on the instrumented test binary (Bazel merged LCOV often misses rlib lines).
 # C/C++/Python/Node use ``bazel coverage --combined_report=lcov``.
 # C# uses ``tools/coverage/cs_coverage.sh`` (Coverlet Cobertura + ReportGenerator), linked from the same index.
 #
@@ -101,45 +102,62 @@ print(f"{pct:.1f}")
 PY
 }
 
-find_rust_llvm_bin() {
-  local ob cov
-  ob="$(bazel info output_base)"
-  # rules_rust external repo names vary (e.g. rust_linux_* vs rust_host_tools* with Bazel 7+).
-  # Prefer the host toolchain bin (matches the instrumented test run on this machine).
-  for pat in \
-    '*rust_host_tools*/lib/rustlib/*/bin/llvm-cov' \
-    '*rust_linux_*/lib/rustlib/*/bin/llvm-cov' \
-    '*/lib/rustlib/*/bin/llvm-cov'; do
-    cov="$(find "$ob/external" -path "$pat" -type f 2>/dev/null | head -1)"
-    [[ -n "$cov" ]] && break
-  done
-  if [[ -z "$cov" ]]; then
-    echo "could not find Rust llvm-cov under $ob/external (build //src/rust/is_palindrome:acceptance_test first)" >&2
-    exit 1
-  fi
-  dirname "$cov"
-}
-
 collect_rust_lcov() {
   local dest="$1"
   echo "==> Rust: llvm-cov on instrumented //src/rust/is_palindrome:acceptance_test"
   bazel build \
     --collect_code_coverage \
     --instrumentation_filter="${instr}" \
+    //tools/coverage:rust_llvm_tools \
     //src/rust/is_palindrome:acceptance_test \
     >/dev/null
-  local rel bin rdir prof llvm_dir
-  rel="$(bazel cquery --output=files //src/rust/is_palindrome:acceptance_test 2>/dev/null | head -1)"
-  bin="$ROOT/$rel"
-  rdir="$(dirname "$bin")/acceptance_test.runfiles/_main"
-  if [[ ! -d "$rdir" ]]; then
-    echo "missing runfiles: $rdir" >&2
+  local bin rdir prof llvm_dir runfiles_parent bins
+  llvm_dir="$ROOT/bazel-bin/tools/coverage"
+  if [[ ! -x "$llvm_dir/llvm-cov" || ! -x "$llvm_dir/llvm-profdata" ]]; then
+    echo "missing Rust llvm tools under $llvm_dir (build //tools/coverage:rust_llvm_tools first)" >&2
     exit 1
+  fi
+  shopt -s nullglob
+  bins=( "$ROOT/bazel-bin/src/rust/is_palindrome"/test-*/acceptance_test )
+  shopt -u nullglob
+  if [[ ${#bins[@]} -eq 0 ]]; then
+    echo "missing //src/rust/is_palindrome:acceptance_test under bazel-bin/src/rust/is_palindrome/test-*/acceptance_test" >&2
+    exit 1
+  fi
+  # rules_rust can leave multiple test-* trees (e.g. different configurations); use the newest mtime (the one this build refreshed).
+  bin=""
+  latest=-1
+  for candidate in "${bins[@]}"; do
+    [[ -f "$candidate" ]] || continue
+    ts="$(python3 -c 'import os,sys; print(int(os.path.getmtime(sys.argv[1])))' "$candidate" 2>/dev/null || echo 0)"
+    if [[ "$ts" -gt "$latest" ]]; then
+      latest="$ts"
+      bin="$candidate"
+    fi
+  done
+  if [[ -z "$bin" ]]; then
+    echo "no usable acceptance_test binary among: ${bins[*]}" >&2
+    exit 1
+  fi
+  runfiles_parent="$(dirname "$bin")/acceptance_test.runfiles"
+  if [[ ! -d "$runfiles_parent" ]]; then
+    echo "missing runfiles dir: $runfiles_parent" >&2
+    exit 1
+  fi
+  if [[ -d "$runfiles_parent/_main" ]]; then
+    rdir="$runfiles_parent/_main"
+  else
+    found=( "$runfiles_parent"/* )
+    if [[ ${#found[@]} -eq 1 && -d "${found[0]}" ]]; then
+      rdir="${found[0]}"
+    else
+      echo "could not resolve runfiles workspace under $runfiles_parent (expected _main or exactly one subdirectory)" >&2
+      exit 1
+    fi
   fi
   prof="$OUT/_rust_profraw_tmp"
   rm -rf "$prof"
   mkdir -p "$prof"
-  llvm_dir="$(find_rust_llvm_bin)"
   (
     export RUNFILES_DIR="$rdir"
     LLVM_PROFILE_FILE="$prof/rust-%m.profraw" "$bin"
