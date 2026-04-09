@@ -7,6 +7,10 @@ else
 fi
 bash -n "$ROOT/tools/bazel-coverage.sh"
 bash -n "$ROOT/tools/coverage/coverage_html.sh"
+if grep -E '^[[:space:]]*sh_binary[[:space:]]*\(' "$ROOT/tools/coverage/BUILD.bazel" >/dev/null; then
+  echo "tools/coverage/BUILD.bazel must not define sh_binary targets; run coverage scripts from the repo root (CI/host), not via bazel run — nested Bazel breaks the action graph and can deadlock on the server lock." >&2
+  exit 1
+fi
 grep -Fq '//tools/coverage:rust_llvm_tools' "$ROOT/tools/coverage/coverage_html.sh" || {
   echo "coverage_html.sh must bazel build //tools/coverage:rust_llvm_tools (declared-path llvm-cov)" >&2
   exit 1

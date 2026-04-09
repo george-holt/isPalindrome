@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # One command: full-repo coverage HTML (Rust/C/C++/Python/Node + C#).
-# Run: bazel run //tools/coverage:full
-# Forwards args to coverage_html.sh (which runs C# coverage when building HTML).
+# Run from repo root: ./tools/coverage/coverage_all.sh (forwards args to coverage_html.sh).
 set -euo pipefail
 
 ROOT="${BUILD_WORKING_DIRECTORY:-}"

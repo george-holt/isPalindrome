@@ -1,7 +1,8 @@
 load("@crates//:defs.bzl", "aliases", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+load("//:visibility.bzl", "CLI_RUST_CORE", "FIXTURES_CLI_ACCEPTANCE", "ROOT_TEST_SUITE")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 rust_library(
     name = "is_palindrome_cli_lib",
@@ -20,6 +21,7 @@ rust_binary(
     srcs = ["src/bin/stdin_json_adapter.rs"],
     aliases = aliases(),
     edition = "2021",
+    visibility = FIXTURES_CLI_ACCEPTANCE,
     deps = ["//src/rust/is_palindrome:is_palindrome_lib"] + all_crate_deps(
         normal = True,
         proc_macro = True,
@@ -31,6 +33,7 @@ rust_binary(
     srcs = ["src/bin/is_palindrome_cli.rs"],
     aliases = aliases(),
     edition = "2021",
+    visibility = FIXTURES_CLI_ACCEPTANCE,
     deps = [":is_palindrome_cli_lib"] + all_crate_deps(
         normal = True,
         proc_macro = True,
@@ -45,6 +48,7 @@ rust_test(
     data = [
         ":is_palindrome_cli",
         ":stdin_json_adapter",
+        "@python_3_12//:python3",
         "//:MODULE.bazel",
         "//fixtures:acceptance_manifest.json",
         "//src/py:is_palindrome_py_sources",
@@ -79,6 +83,7 @@ rust_test(
 
 test_suite(
     name = "all_cli_tests",
+    visibility = ROOT_TEST_SUITE,
     tests = [
         ":cli_integration_test",
         ":cli_unit_test",

@@ -4,8 +4,9 @@ load(
     "csharp_library",
     "csharp_test",
 )
+load("//:visibility.bzl", "FIXTURES_CLI_ACCEPTANCE")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 csharp_library(
     name = "is_palindrome_lib",
@@ -17,6 +18,7 @@ csharp_library(
 csharp_binary(
     name = "stdin_json_adapter",
     srcs = ["StdinJsonAdapter/Program.cs"],
+    visibility = FIXTURES_CLI_ACCEPTANCE,
     deps = [":is_palindrome_lib"],
     nullable = "enable",
     out = "StdinJsonAdapter",
@@ -25,6 +27,7 @@ csharp_binary(
 
 csharp_test(
     name = "acceptance_test",
+    size = "small",
     srcs = ["AcceptanceTest.cs"],
     data = ["//fixtures:acceptance_manifest.json"],
     defines = ["BAZEL_TEST"],

@@ -193,10 +193,10 @@ def run_acceptance_main(argv: list[str]) -> int:
     cli_exe = resolve_is_palindrome_cli(REPO_ROOT)
     if cli_exe is None:
         sys.stderr.write(
-            "is_palindrome_cli not found. Build it (e.g. "
-            "`bazel build //CLI:is_palindrome_cli` or "
-            "`cargo build --manifest-path CLI/Cargo.toml`) "
-            "or set IS_PALINDROME_CLI to the executable path.\n"
+            "is_palindrome_cli not found under Bazel runfiles. Run via "
+            "`bazel run //fixtures:cli ...` (supplies the Rust CLI), build "
+            "`bazel build //CLI:is_palindrome_cli`, or set IS_PALINDROME_CLI "
+            "to the executable path.\n"
         )
         return 2
 

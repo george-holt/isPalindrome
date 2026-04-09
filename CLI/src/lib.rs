@@ -298,6 +298,40 @@ fn find_c_stdin_json_adapter(repo_root: &Path) -> Option<PathBuf> {
     .find(|c| c.is_file())
 }
 
+/// Bazel/runfiles: set `IS_PALINDROME_PYTHON` to the pinned interpreter (`@python_3_12//:python3`).
+/// Otherwise the CLI uses `python3` / `python` on `PATH`.
+fn resolve_python_exe() -> Result<PathBuf, which::Error> {
+    if let Ok(p) = std::env::var("IS_PALINDROME_PYTHON") {
+        let pb = PathBuf::from(p);
+        if pb.is_file() {
+            return Ok(pb);
+        }
+    }
+    which::which("python3").or_else(|_| which::which("python"))
+}
+
+/// Same pattern as Python: `IS_PALINDROME_NODE` overrides `which("node")`.
+fn resolve_node_exe() -> Result<PathBuf, which::Error> {
+    if let Ok(p) = std::env::var("IS_PALINDROME_NODE") {
+        let pb = PathBuf::from(p);
+        if pb.is_file() {
+            return Ok(pb);
+        }
+    }
+    which::which("node")
+}
+
+/// Same pattern: `IS_PALINDROME_DOTNET` overrides `which("dotnet")`.
+fn resolve_dotnet_exe() -> Result<PathBuf, which::Error> {
+    if let Ok(p) = std::env::var("IS_PALINDROME_DOTNET") {
+        let pb = PathBuf::from(p);
+        if pb.is_file() {
+            return Ok(pb);
+        }
+    }
+    which::which("dotnet")
+}
+
 fn find_rust_stdin_json_adapter(repo_root: &Path) -> Option<PathBuf> {
     if let Ok(p) = std::env::var("IS_PALINDROME_RUST_STDIN_ADAPTER") {
         let pb = PathBuf::from(p);
@@ -481,7 +515,7 @@ fn run_thin_backend(
     repo_root: &Path,
 ) -> BackendRow {
     match impl_name {
-        "nodejs" => match which::which("node") {
+        "nodejs" => match resolve_node_exe() {
             Ok(node) => {
                 let nodejs_root = repo_root.join("src/nodejs/ispalindrome");
                 let script = nodejs_root.join("stdin-json-adapter.mjs");
@@ -571,13 +605,13 @@ fn run_thin_backend(
                 backend: "nodejs".into(),
                 status: "skipped".into(),
                 result: None,
-                message: Some("node not found on PATH".into()),
+                message: Some("node not found (set IS_PALINDROME_NODE or install on PATH)".into()),
                 code: None,
                 complete: None,
                 reason: None,
             },
         },
-        "cs" => match which::which("dotnet") {
+        "cs" => match resolve_dotnet_exe() {
             Ok(dotnet) => {
                 let proj = repo_root.join("src/cs/StdinJsonAdapter/StdinJsonAdapter.csproj");
                 if !proj.is_file() {
@@ -654,7 +688,7 @@ fn run_thin_backend(
                 backend: "cs".into(),
                 status: "skipped".into(),
                 result: None,
-                message: Some("dotnet not found on PATH".into()),
+                message: Some("dotnet not found (set IS_PALINDROME_DOTNET or install on PATH)".into()),
                 code: None,
                 complete: None,
                 reason: None,
@@ -698,7 +732,7 @@ fn run_thin_backend(
                 .stderr(Stdio::piped());
             run_command_with_stdin_json(&mut cmd, payload, "c")
         }
-        "py" => match which::which("python3").or_else(|_| which::which("python")) {
+        "py" => match resolve_python_exe() {
             Ok(py_exe) => {
                 let py_pkg_root = repo_root.join("src/py");
                 let adapter = py_pkg_root.join("is_palindrome/stdin_json_adapter.py");
@@ -737,7 +771,7 @@ fn run_thin_backend(
                 backend: "py".into(),
                 status: "skipped".into(),
                 result: None,
-                message: Some("python3 not found on PATH".into()),
+                message: Some("python3 not found (set IS_PALINDROME_PYTHON or install on PATH)".into()),
                 code: None,
                 complete: None,
                 reason: None,

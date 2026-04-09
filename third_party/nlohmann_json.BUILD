@@ -12,5 +12,4 @@ cc_library(
         "single_include",
         "include",
     ],
-    visibility = ["//visibility:public"],
 )

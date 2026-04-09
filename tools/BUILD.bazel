@@ -1,20 +1,24 @@
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//:visibility.bzl", "ROOT_TEST_SUITE")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 sh_test(
-    name = "host_toolchains",
+    name = "host_toolchains_policy",
     size = "small",
-    srcs = ["host_toolchains.sh"],
+    visibility = ROOT_TEST_SUITE,
+    srcs = ["host_toolchains_policy_test.sh"],
 )
 
 sh_test(
     name = "coverage_report_syntax",
     size = "small",
+    visibility = ROOT_TEST_SUITE,
     srcs = ["coverage_report_syntax_test.sh"],
     data = [
         "bazel-coverage.sh",
         "bazel_coverage_html.sh",
+        "//tools/coverage:BUILD.bazel",
         "//tools/coverage:coverage_html.sh",
         "coverage_report.sh",
         "normalize_coverage_paths.py",
@@ -25,6 +29,7 @@ sh_test(
 sh_test(
     name = "coverage_report_pnpm_bootstrap",
     size = "small",
+    visibility = ROOT_TEST_SUITE,
     srcs = ["coverage_report_pnpm_bootstrap_test.sh"],
     data = ["bazel-coverage.sh"],
 )

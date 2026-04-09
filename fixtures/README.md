@@ -41,12 +41,14 @@ bazel test //fixtures:acceptance_manifest_cli   # manual: subprocess matrix
 - **`is_palindrome_cli`** — argv parsing, **`--impl`**, **`--hex`**, **`--custom`**, exit codes **0** / **1** / **2**. See [`SPEC.md`](../SPEC.md) §1.
 - **`//fixtures:acceptance_manifest_cli`** — six parallel **`sh_test`** shards; tagged **`manual`** so default **`bazel test //...`** runs the direct **`acceptance_test`** targets instead.
 
-**Python helpers** under [`cli/`](cli/) (optional):
+**Python helpers** under [`cli/`](cli/) (optional; **Bazel-only** — runfiles provide `is_palindrome_cli`):
 
 ```bash
-PYTHONPATH=. python3 -m fixtures.cli acceptance --impl rust
-python3 -m fixtures.cli test-native    # runs: bazel test //...
+bazel run //fixtures:cli -- acceptance --impl rust
+bazel run //fixtures:cli -- test-native    # runs: bazel test //...
 ```
+
+Override the CLI path if needed: `IS_PALINDROME_CLI=/path/to/is_palindrome_cli`.
 
 ## Harness rules
 

@@ -74,6 +74,9 @@ jobs:
             echo "No .bazelversion file found"
           fi
 
+      - name: Validate host PATH tools (matrix / coverage prerequisites)
+        run: ./tools/validate_host_toolchains.sh
+
       - name: Install dotnet global tools (coverage)
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -91,6 +94,7 @@ jobs:
       - name: Bazel test
         run: bazel test //...
 
+      # Host script (not ``bazel run``): coverage_html.sh calls Bazel internally; nested Bazel is unsupported.
       - name: Unified coverage (CLI tests + manifest acceptance)
         run: ./tools/bazel-coverage.sh
 

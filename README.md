@@ -26,5 +26,5 @@ For a **reproducible environment** (compilers and Bazel preinstalled), use the *
 | **`CLI/`** | Canonical **`is_palindrome_cli`** (Rust), at repo root |
 | **`fixtures/`** | Shared acceptance data (`acceptance_manifest.json`) and Python CLI harness |
 | **`tools/`** | Build/coverage scripts; **`bazel build`** / **`bazel test`** are the primary workflows |
-| **`reports/`** | Generated coverage HTML (gitignored); run `bazel run //tools/coverage:html` or `./tools/bazel-coverage.sh` |
+| **`reports/`** | Generated coverage HTML (gitignored); run `./tools/bazel-coverage.sh` from the repo root (CI uses this). Coverage scripts call Bazel internally — do not run them via `bazel run` (nested Bazel). |
 | **`docs/`**, **`SPEC.md`**, **`third_party/`** | Documentation and Bazel `*_BUILD` fragments for C/C++ deps |

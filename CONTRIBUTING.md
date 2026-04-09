@@ -47,9 +47,9 @@ Install the CLI once, for example: `npm install -g @devcontainers/cli` (requires
 
 ### What the container provides
 
-The Dockerfile installs **Python 3.12** (Ubuntu), **Rust (stable)** via rustup, **Node.js 22** (NodeSource), **.NET SDK 8**, **`build-essential`** (GCC/G++), **`pkg-config`**, and **Bazelisk** as `bazel`. On first create, **[`.devcontainer/post-create.sh`](.devcontainer/post-create.sh)** runs a small Bazel smoke test (`//tools:host_toolchains`).
+The Dockerfile installs **Python 3.12** (Ubuntu), **Rust (stable)** via rustup, **Node.js 22** (NodeSource), **.NET SDK 8**, **`build-essential`** (GCC/G++), **`pkg-config`**, and **Bazelisk** as `bazel`. On first create, **[`.devcontainer/post-create.sh`](.devcontainer/post-create.sh)** runs **`tools/validate_host_toolchains.sh`** (host `PATH` check for the language matrix — not a Bazel target).
 
-`PYTHONPATH` may be set to the workspace root when running **Python tooling** (e.g. `python -m fixtures.cli acceptance`); it is **not** required for **`bazel run //CLI:is_palindrome_cli`**.
+Use **`bazel run //fixtures:cli`** for the manifest acceptance / test-native Python helpers (runfiles supply `is_palindrome_cli`); **`PYTHONPATH`** is not required for that or for **`bazel run //CLI:is_palindrome_cli`**.
 
 ## Prerequisites (local install)
 
@@ -94,10 +94,10 @@ From the **repository root**:
 
    That target is a **`test_suite`** of six **`sh_test`** shards (`acceptance_manifest_cli_c`, `_cpp`, `_cs`, `_nodejs`, `_py`, `_rust`) so Bazel can run backends in parallel. To run one backend: e.g. `bazel test //fixtures:acceptance_manifest_cli_cs`.
 
-   Optional Python entry (same behavior, requires `PYTHONPATH=.` from repo root):
+   Optional Python entry (same behavior, Bazel supplies the Rust CLI via runfiles):
 
    ```bash
-   PYTHONPATH=. python3 -m fixtures.cli acceptance --impl rust
+   bazel run //fixtures:cli -- acceptance --impl rust
    ```
 
 Use `python` instead of `python3` on Windows if that is how Python is installed.

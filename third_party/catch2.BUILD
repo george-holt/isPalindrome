@@ -24,5 +24,4 @@ cc_library(
         "@platforms//os:windows": ["/utf-8"],
         "//conditions:default": [],
     }),
-    visibility = ["//visibility:public"],
 )

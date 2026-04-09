@@ -45,10 +45,10 @@ bazel test //...   # includes //src/...:acceptance_test per language
 
 ```bash
 bazel test //fixtures:acceptance_manifest_cli
-# or: PYTHONPATH=. python3 -m fixtures.cli acceptance --impl rust
+# or: bazel run //fixtures:cli -- acceptance --impl rust
 ```
 
-**Native test matrix:** `bazel test //...` (or `python -m fixtures.cli test-native`, which runs `bazel test //...`).
+**Native test matrix:** `bazel test //...` (or `bazel run //fixtures:cli -- test-native`, which runs `bazel test //...`).
 
 The Python package [`fixtures/cli/`](fixtures/cli/) is **tooling only** (acceptance runner script and `test-native` wrapper), not the palindrome CLI surface.
 

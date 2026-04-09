@@ -1,19 +1,65 @@
 load("@aspect_rules_js//js:defs.bzl", "js_library")
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load(":acceptance_manifest_cli.bzl", "acceptance_manifest_cli_suite")
+load("//:visibility.bzl", "ACCEPTANCE_MANIFEST_JS", "ACCEPTANCE_MANIFEST_JSON", "MANIFEST_CASES_PY")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
-exports_files(["acceptance_manifest.json"])
+exports_files(
+    ["acceptance_manifest.json"],
+    visibility = ACCEPTANCE_MANIFEST_JSON,
+)
+
+py_library(
+    name = "fixtures_cli",
+    srcs = glob(["cli/**/*.py"]),
+    deps = ["@rules_python//python/runfiles:runfiles"],
+    imports = [".."],
+)
+
+# Output must not be named ``cli`` (that path collides with package dir ``fixtures/cli/``).
+py_binary(
+    name = "cli_bin",
+    srcs = ["cli/__main__.py"],
+    main = "cli/__main__.py",
+    deps = [
+        ":fixtures_cli",
+        "@rules_python//python/runfiles:runfiles",
+    ],
+    data = ["//CLI:is_palindrome_cli"],
+    imports = [".."],
+)
+
+alias(
+    name = "cli",
+    actual = ":cli_bin",
+)
+
+py_test(
+    name = "cli_paths_test",
+    size = "small",
+    srcs = ["cli_paths_test.py"],
+    main = "cli_paths_test.py",
+    deps = [
+        ":fixtures_cli",
+        "@rules_python//python/runfiles:runfiles",
+    ],
+    data = ["//CLI:is_palindrome_cli"],
+    imports = [".."],
+)
 
 py_library(
     name = "manifest_cases",
+    testonly = True,
     srcs = ["manifest_cases.py"],
+    visibility = MANIFEST_CASES_PY,
 )
 
 js_library(
     name = "acceptance_manifest_json",
+    testonly = True,
     srcs = ["acceptance_manifest.json"],
+    visibility = ACCEPTANCE_MANIFEST_JS,
 )
 
 acceptance_manifest_cli_suite()

@@ -1,6 +1,6 @@
 //! Direct manifest-driven tests: ``fixtures/acceptance_manifest.json`` executed in-process.
-//! Coverage for ``lib.rs`` is collected via ``llvm-cov`` in ``tools/coverage/coverage_html.sh``:
-//! Bazel's merged LCOV for this ``rust_test`` target is often empty across the rlib boundary.
+//! Coverage for ``lib.rs`` is collected via ``llvm-cov`` from ``//tools/coverage:rust_llvm_tools`` in
+//! ``tools/coverage/coverage_html.sh``; Bazel's merged LCOV for this ``rust_test`` is often empty across the rlib boundary.
 
 use is_palindrome::{is_palindrome, is_palindrome_from_utf8};
 use serde::Deserialize;

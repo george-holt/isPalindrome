@@ -74,11 +74,35 @@ fn rust_stdin_adapter_bin() -> Option<PathBuf> {
     None
 }
 
+/// Hermetic `rules_python` interpreter (`@python_3_12//:python3`) — repo dir name includes the platform triple.
+fn hermetic_python3_runfile() -> Option<PathBuf> {
+    let rf = std::env::var("RUNFILES_DIR").ok()?;
+    let base = PathBuf::from(rf);
+    let entries = fs::read_dir(&base).ok()?;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if !name.starts_with("rules_python++python+python_3_12_") {
+            continue;
+        }
+        for bin in ["bin/python3", "bin/python3.exe"] {
+            let p = entry.path().join(bin);
+            if p.is_file() {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
 fn cli_command() -> Command {
     let mut c = Command::new(cli_bin());
     c.current_dir(repo_root());
     if let Some(p) = rust_stdin_adapter_bin() {
         c.env("IS_PALINDROME_RUST_STDIN_ADAPTER", p);
+    }
+    if let Some(p) = hermetic_python3_runfile() {
+        c.env("IS_PALINDROME_PYTHON", p);
     }
     c
 }

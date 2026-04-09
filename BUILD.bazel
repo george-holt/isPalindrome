@@ -1,13 +1,74 @@
-package(default_visibility = ["//visibility:public"])
+load("//:visibility.bzl", "CLI_MODULE_BAZEL")
 
-exports_files(["MODULE.bazel"])
+package(default_visibility = ["//visibility:private"])
+
+# --- Named visibility widenings (see //:visibility.bzl for aliases) ---
+
+package_group(
+    name = "root_test_suite",
+    packages = ["//"],
+)
+
+package_group(
+    name = "acceptance_manifest_json_consumers",
+    packages = [
+        "//CLI",
+        "//fixtures",
+        "//src/c",
+        "//src/cpp",
+        "//src/cs",
+        "//src/py",
+        "//src/rust/is_palindrome",
+    ],
+)
+
+package_group(
+    name = "acceptance_manifest_js_consumers",
+    packages = ["//src/nodejs/ispalindrome"],
+)
+
+package_group(
+    name = "manifest_cases_py_consumers",
+    packages = ["//src/py"],
+)
+
+package_group(
+    name = "cli_rust_core_consumers",
+    packages = ["//CLI"],
+)
+
+package_group(
+    name = "cli_py_sources_consumers",
+    packages = ["//CLI"],
+)
+
+package_group(
+    name = "cli_module_bazel_consumers",
+    packages = ["//CLI"],
+)
+
+# Fixture-driven subprocess harness (Python CLI + per-language adapters as runfiles).
+package_group(
+    name = "fixtures_cli_acceptance_consumers",
+    packages = ["//fixtures"],
+)
+
+package_group(
+    name = "tools_coverage_consumers",
+    packages = ["//tools"],
+)
+
+exports_files(
+    ["MODULE.bazel"],
+    visibility = CLI_MODULE_BAZEL,
+)
 
 test_suite(
     name = "all_tests",
     tags = ["manual"],
     tests = [
         "//CLI:all_cli_tests",
-        "//tools:host_toolchains",
+        "//tools:host_toolchains_policy",
         "//tools:coverage_report_syntax",
         "//tools:coverage_report_pnpm_bootstrap",
         "//fixtures:acceptance_manifest_cli",

@@ -1,4 +1,5 @@
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//:visibility.bzl", "ROOT_TEST_SUITE")
 
 # Bazel shards for manifest CLI acceptance (one sh_test per backend for parallel CI).
 
@@ -59,4 +60,5 @@ def acceptance_manifest_cli_suite():
             "acceptance",
             "manual",
         ],
+        visibility = ROOT_TEST_SUITE,
     )

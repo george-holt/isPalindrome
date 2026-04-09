@@ -5,8 +5,8 @@
 # C/C++/Python/Node use ``bazel coverage --combined_report=lcov``.
 # C# uses ``tools/coverage/cs_coverage.sh`` (Coverlet Cobertura + ReportGenerator), linked from the same index.
 #
-# Usage:
-#   bazel run //tools/coverage:html
+# Usage (from repository root — not via ``bazel run``; this script invokes Bazel):
+#   ./tools/bazel-coverage.sh
 #   ./tools/coverage/coverage_html.sh
 #   ./tools/coverage/coverage_html.sh --no-html   # LCOV only under reports/coverage/*.info
 #
@@ -24,7 +24,7 @@ for arg in "$@"; do
   case "$arg" in
     --no-html) NO_HTML=true ;;
     -h | --help)
-      sed -n '2,14p' "$0"
+      sed -n '2,12p' "$0"
       exit 0
       ;;
   esac

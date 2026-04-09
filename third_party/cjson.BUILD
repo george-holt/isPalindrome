@@ -7,5 +7,4 @@ cc_library(
     srcs = ["cJSON.c"],
     hdrs = ["cJSON.h"],
     includes = ["."],
-    visibility = ["//visibility:public"],
 )

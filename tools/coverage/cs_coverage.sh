@@ -2,8 +2,7 @@
 # C#: same manifest cases as //src/cs:acceptance_test, run under dotnet test + coverlet, then HTML via reportgenerator.
 # Produces reports/coverage/cs/coverage.cobertura.xml and reports/coverage/cs/html/.
 #
-# Usage:
-#   bazel run //tools/coverage:cs
+# Usage (from repository root):
 #   ./tools/coverage/cs_coverage.sh
 #
 set -euo pipefail
