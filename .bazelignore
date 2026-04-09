@@ -1,3 +1,6 @@
+# Claude / tooling worktrees nested under the repo (partial trees break ``bazel build //...``).
+.claude
+
 # Leftover native build trees (historical CMake); not part of the Bazel graph.
 src/c/build
 src/cpp/build
