@@ -1,6 +1,18 @@
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load(":rust_llvm_tools.bzl", "rust_llvm_coverage_tools")
 
 package(default_visibility = ["//visibility:public"])
+
+# Runnable coverage entrypoints (``bazel run`` one of these — not ``:all``):
+#   ``//tools/coverage:html`` — per-language HTML + index (see script for C# when not ``--no-html``).
+#   ``//tools/coverage:full`` — same as ``:html`` (orchestrator wrapper).
+#   ``//tools/coverage:cs`` — C# / Coverlet only.
+# Do **not** use ``bazel run //tools/coverage:all``: ``:all`` is Bazel’s wildcard and expands to
+# every target in this package (``html``, ``full``, ``cs``, ``rust_llvm_tools``, …), which ``bazel run`` rejects.
+
+rust_llvm_coverage_tools(
+    name = "rust_llvm_tools",
+)
 
 exports_files([
     "coverage_all.sh",
@@ -21,9 +33,14 @@ sh_binary(
 )
 
 # Polyglot orchestrator: Bazel coverage + dotnet/coverlet do not share one native graph here.
-# (Named ``full`` not ``all`` to avoid Bazel's ``:all`` wildcard ambiguity.)
+# (Named ``full`` not ``all`` — ``:all`` is reserved as a target pattern, not a single app.)
 sh_binary(
     name = "full",
     srcs = ["coverage_all.sh"],
     data = ["coverage_html.sh"],
+)
+
+alias(
+    name = "polyglot",
+    actual = ":full",
 )
